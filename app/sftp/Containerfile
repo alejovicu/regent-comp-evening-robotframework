@@ -1,0 +1,7 @@
+# SFTP server for catalog uploads, based on atmoz/sftp.
+# The user, password and upload folder come from the SFTP_USERS env var
+# (format user:password:uid:gid:folder), set in the Kubernetes manifest.
+FROM docker.io/atmoz/sftp:alpine
+COPY seed/ /seed/
+COPY seed-catalog.sh /etc/sftp.d/seed-catalog.sh
+RUN chmod +x /etc/sftp.d/seed-catalog.sh

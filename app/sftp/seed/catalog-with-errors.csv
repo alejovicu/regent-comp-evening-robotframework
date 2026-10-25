@@ -1,0 +1,8 @@
+sku,name,price,description
+GOOD-001,Valid Product,10.00,This row is fine
+,Missing SKU,5.00,No sku on this row
+NOPRICE-001,Missing Price,,No price on this row
+NEG-001,Negative Price,-4.00,Price must be positive
+TEXT-001,Text Price,ten,Price is not a number
+GOOD-001,Duplicate SKU,11.00,Same sku twice in one file
+GOOD-002,Another Valid Product,20.00,This row is fine too

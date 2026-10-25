@@ -1,0 +1,37 @@
+# Quick local run without Kubernetes:  podman compose up --build
+# Web app: http://localhost:8080   SFTP: sftp -P 2222 catalog@localhost (password catalog123)
+services:
+  mongo:
+    image: docker.io/library/mongo:7.0
+    volumes: [mongo-data:/data/db]
+
+  sftp:
+    build: ./sftp
+    image: localhost/shopcart-sftp:1.0
+    environment:
+      SFTP_USERS: "catalog:catalog123:1001:1001:upload"
+    ports: ["2222:22"]
+    volumes: [sftp-upload:/home/catalog/upload]
+
+  backend:
+    build: ./backend
+    image: localhost/shopcart-backend:1.0
+    environment:
+      MONGO_URL: mongodb://mongo:27017
+      SFTP_HOST: sftp
+      SFTP_USER: catalog
+      SFTP_PASSWORD: catalog123
+      JWT_SECRET: local-demo-jwt-secret-change-me
+    depends_on: [mongo, sftp]
+
+  frontend:
+    build: ./frontend
+    image: localhost/shopcart-frontend:1.0
+    environment:
+      BACKEND_URL: http://backend:8000
+    ports: ["8080:80"]
+    depends_on: [backend]
+
+volumes:
+  mongo-data:
+  sftp-upload:
