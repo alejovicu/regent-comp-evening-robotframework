@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<robot generator="Robot 7.5 (Python 3.9.6 on darwin)" generated="2026-10-26T17:45:10.396126" rpa="false" schemaversion="5">
+<suite id="s1" name="Regent" source="/Users/alejovicu/src/local/robotframework-demo/demo-live/regent.robot">
+<test id="s1-t1" name="Check Regent Site is OK" line="5">
+<kw name="Open Browser" owner="SeleniumLibrary">
+<msg time="2026-10-26T17:45:10.480359" level="INFO">Opening browser 'Chrome' to base url 'https://www.regent.se'.</msg>
+<arg>https://www.regent.se</arg>
+<arg>Chrome</arg>
+<doc>Opens a new browser instance to the optional ``url``.</doc>
+<status status="PASS" start="2026-10-26T17:45:10.480264" elapsed="1.387563"/>
+</kw>
+<kw name="Sleep" owner="BuiltIn">
+<msg time="2026-10-26T17:45:16.869790" level="INFO">Slept 5 seconds.</msg>
+<arg>5</arg>
+<doc>Pauses execution for the given time.</doc>
+<status status="PASS" start="2026-10-26T17:45:11.868645" elapsed="5.001359"/>
+</kw>
+<status status="PASS" start="2026-10-26T17:45:10.479772" elapsed="6.390619"/>
+</test>
+<status status="PASS" start="2026-10-26T17:45:10.396898" elapsed="6.474277"/>
+</suite>
+<statistics>
+<total>
+<stat pass="1" fail="0" skip="0">All Tests</stat>
+</total>
+<tag>
+</tag>
+<suite>
+<stat name="Regent" id="s1" pass="1" fail="0" skip="0">Regent</stat>
+</suite>
+</statistics>
+<errors>
+</errors>
+</robot>

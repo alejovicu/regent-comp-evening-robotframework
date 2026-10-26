@@ -1,0 +1,56 @@
+# Creates one ArgoCD Application per open pull request on GitHub. Each one deploys
+# test_framework/k8s at the PR's head commit into the shopcart namespace, so a new
+# Job (named after the PR number and commit) runs the suite on every push to the PR.
+# Closing or merging the PR deletes the Application and its Job.
+apiVersion: argoproj.io/v1alpha1
+kind: ApplicationSet
+metadata:
+  name: robot-tests-pr
+  namespace: argocd
+spec:
+  goTemplate: true
+  goTemplateOptions: ["missingkey=error"]
+  generators:
+    - pullRequest:
+        github:
+          owner: alejovicu
+          repo: regent-comp-evening-robotframework
+          # Without a token GitHub allows 60 API requests per hour. To use one:
+          #   kubectl -n argocd create secret generic github-token --from-literal=token=<PAT>
+          # tokenRef:
+          #   secretName: github-token
+          #   key: token
+        # A local kind cluster cannot receive GitHub webhooks, so poll for PR changes.
+        requeueAfterSeconds: 120
+  template:
+    metadata:
+      name: 'robot-tests-pr-{{ .number }}'
+      labels:
+        app: robot-tests
+      finalizers:
+        - resources-finalizer.argocd.argoproj.io
+    spec:
+      project: default
+      source:
+        repoURL: https://github.com/alejovicu/regent-comp-evening-robotframework.git
+        targetRevision: '{{ .head_sha }}'
+        path: test_framework/k8s
+        kustomize:
+          nameSuffix: '-pr-{{ .number }}-{{ .head_short_sha }}'
+          patches:
+            - target: { kind: Job, name: robot-tests }
+              # Points the run at the PR commit; the test op fails the sync if the env order in job.yaml changes.
+              patch: |-
+                - op: test
+                  path: /spec/template/spec/containers/0/env/1/name
+                  value: GIT_REVISION
+                - op: replace
+                  path: /spec/template/spec/containers/0/env/1/value
+                  value: '{{ .head_sha }}'
+      destination:
+        server: https://kubernetes.default.svc
+        namespace: shopcart
+      syncPolicy:
+        automated:
+          prune: true
+          selfHeal: true
