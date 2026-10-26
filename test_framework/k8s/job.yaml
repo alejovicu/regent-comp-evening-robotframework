@@ -1,0 +1,82 @@
+# One run of the Robot Framework suite against the app in this namespace.
+# The pod downloads the test code at GIT_REVISION from GitHub, installs the
+# requirements and runs the features; a Selenium/Chromium sidecar drives the browser.
+# The Job fails when any test fails, which ArgoCD shows as a Degraded application.
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: robot-tests
+  labels: { app: robot-tests }
+spec:
+  backoffLimit: 0
+  activeDeadlineSeconds: 1800
+  template:
+    metadata:
+      labels: { app: robot-tests }
+    spec:
+      restartPolicy: Never
+      initContainers:
+        # Native sidecar: starts before the tests and is stopped when they finish.
+        - name: selenium
+          image: docker.io/selenium/standalone-chromium:4.51.0-20261010
+          restartPolicy: Always
+          env:
+            - { name: SE_NODE_MAX_SESSIONS, value: "1" }
+            - { name: SE_START_XVFB, value: "false" }
+          ports:
+            - containerPort: 4444
+          startupProbe:
+            httpGet: { path: /status, port: 4444 }
+            periodSeconds: 3
+            failureThreshold: 60
+          volumeMounts:
+            - name: dshm
+              mountPath: /dev/shm
+          resources:
+            requests: { cpu: 250m, memory: 384Mi }
+            limits: { memory: 1Gi }
+      containers:
+        - name: robot
+          image: docker.io/library/python:3.12-slim-trixie
+          workingDir: /work
+          env:
+            - { name: GIT_REPO, value: "alejovicu/regent-comp-evening-robotframework" }
+            # Keep GIT_REVISION second: argocd/applicationset.yaml replaces it by index.
+            - { name: GIT_REVISION, value: "main" }
+            - { name: BASE_URL, value: "http://frontend.shopcart.svc.cluster.local" }
+            - { name: REMOTE_URL, value: "http://localhost:4444" }
+            # Headless in the cluster; run locally with BROWSER=chrome to watch the browser.
+            - { name: BROWSER, value: "headlesschrome" }
+            - { name: TIMEOUT, value: "10s" }
+            - { name: ROBOT_OPTIONS, value: "--consolecolors on --consolewidth 120" }
+          command: ["sh", "-ec"]
+          args:
+            - |
+              echo "==> Downloading ${GIT_REPO}@${GIT_REVISION}"
+              python - <<'EOF'
+              import io, os, tarfile, urllib.request
+              url = f"https://codeload.github.com/{os.environ['GIT_REPO']}/tar.gz/{os.environ['GIT_REVISION']}"
+              with urllib.request.urlopen(url, timeout=60) as response:
+                  tarfile.open(fileobj=io.BytesIO(response.read())).extractall("/work", filter="data")
+              EOF
+              cd /work/*/test_framework
+              pip install --quiet --disable-pip-version-check --root-user-action=ignore -r requirements.txt
+              echo "==> Waiting for ${BASE_URL}"
+              python -c "import os, time, urllib.request
+              for _ in range(60):
+                  try: urllib.request.urlopen(os.environ['BASE_URL'] + '/api/health', timeout=5); break
+                  except Exception: time.sleep(5)
+              else: raise SystemExit('app is not reachable')"
+              echo "==> Running Robot Framework"
+              robot --outputdir /work/results features
+          volumeMounts:
+            - name: work
+              mountPath: /work
+          resources:
+            requests: { cpu: 100m, memory: 128Mi }
+            limits: { memory: 512Mi }
+      volumes:
+        - name: work
+          emptyDir: {}
+        - name: dshm
+          emptyDir: { medium: Memory, sizeLimit: 512Mi }

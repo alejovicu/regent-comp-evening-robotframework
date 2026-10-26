@@ -7,6 +7,8 @@ import os
 
 BASE_URL = os.getenv("BASE_URL", "http://localhost:8080")
 BROWSER = os.getenv("BROWSER", "chrome")
+# Selenium server to drive the browser through, e.g. http://localhost:4444. Unset runs a local browser.
+REMOTE_URL = os.getenv("REMOTE_URL") or None
 TIMEOUT = os.getenv("TIMEOUT", "5s")
 WINDOW_WIDTH = int(os.getenv("WINDOW_WIDTH", "1366"))
 WINDOW_HEIGHT = int(os.getenv("WINDOW_HEIGHT", "900"))

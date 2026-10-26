@@ -7,7 +7,7 @@ Resource          ../libs/robot/ui_keywords.resource
 
 *** Keywords ***
 Start Test Session
-    Open Browser    ${BASE_URL}    ${BROWSER}
+    Open Browser    ${BASE_URL}    ${BROWSER}    remote_url=${REMOTE_URL}
     Set Window Size    ${WINDOW_WIDTH}    ${WINDOW_HEIGHT}
 
 End Test Session
